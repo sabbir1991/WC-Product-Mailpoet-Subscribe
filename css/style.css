@@ -1,0 +1,13 @@
+#product_mailpoet_list {
+	margin-top: 15px;
+}
+
+#product_mailpoet_list label.mailpoet_list {
+	display: block;
+	margin-bottom: 5px;
+}
+
+#product_mailpoet_list .description {
+	font-size: 13px;
+	margin:15px 5px;
+}
