@@ -73,9 +73,9 @@ class WC_Product_Mailpoet {
         add_action( 'add_meta_boxes', array( $this, 'load_metabox_in_product_post_type' ) ); 
         // Loads frontend scripts and styles
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
-
+        // Trigger when post is saved
         add_action( 'save_post', array( $this, 'product_subscribe_list_save' ) );
-
+        // Trigger hwen woocommerce product status update
         add_action( 'woocommerce_order_status_changed', array( $this, 'save_user_in_subscriber_list' ), 10, 3 );
 
     }
@@ -155,11 +155,19 @@ class WC_Product_Mailpoet {
 
     }
 
-
+    /**
+     *  Load Metabox in product post type
+     */
     public function load_metabox_in_product_post_type() {
         add_meta_box( 'product_mailpoet', __( 'Product Subscribe User', 'wc_product_mailpoet' ), array( $this, 'product_subscribe_call' ), 'product', 'side', 'high' );
     }
 
+    /**
+     * Dsiplay Subscriber list 
+     *
+     * Callback function of add_meta_box in function load_metabox_in_product_post_type()        
+     * @param  ofject $post
+     */
     public function product_subscribe_call( $post ) {
 
         $modelList = WYSIJA::get( 'list', 'model' );
@@ -184,6 +192,11 @@ class WC_Product_Mailpoet {
         <?php
     }
 
+    /**
+     * Porduct Subscriber list save in post meta correspond to product
+     * @param  integer $post_id 
+     * @return null          
+     */
     public function product_subscribe_list_save( $post_id ) {
 
         // verify if this is an auto save routine. 
@@ -214,18 +227,95 @@ class WC_Product_Mailpoet {
         }          
     }
     
-
-    function save_user_in_subscriber_list ( $order_id, $old_status, $new_status ) {
+    /**
+     * Save User in subscriber list
+     *
+     * Save user subscriber list when woocommerce order
+     * is placed. It only add user in subscriber list when
+     * order is completed.
+     * 
+     * @param  [type] $order_id   [description]
+     * @param  [type] $old_status [description]
+     * @param  [type] $new_status [description]
+     * @return [type]             [description]
+     */
+    public function save_user_in_subscriber_list ( $order_id, $old_status, $new_status ) {
         
-        if( $new_status == 'on-hold' ) {
+        $final_array = array();
+        $list_ids = array();
+
+        if( $new_status == 'completed' ) {
             $order = new WC_Order( $order_id );
             $items = $order->get_items();
 
             foreach ($items as $item) {
-                 get_post_meta( $item['product_id'], '_product_subscriber_list', true );
+                
+                $id = get_post_meta( $item['product_id'], '_product_subscriber_list', true );
+                
+                if( $id == '' && empty( $id ) ) {
+                    continue;
+                }
+                
+                $list_id[] = $id;          
             }
+
+            foreach ( $list_id as $val )
+            {
+                foreach($val as $val2)
+                {
+                    $ids[] = $val2;
+                }
+            }
+
+            $list_ids = array_unique( $ids );
+            
+            if( !count( $list_ids ) ) {
+                return;       
+            }
+            
+            $this->save_list_ids_in_subscriber_list ( $order_id, $list_ids );
+        }  
+    }
+
+    /**
+     * Load Mailpoet core file and save user subscriber list
+     * @param  integer $order_id 
+     * @param  array $list_ids 
+     * @return null
+     */
+    public function save_list_ids_in_subscriber_list ( $order_id, $list_ids ) {
+        
+        $user_id = get_post_meta( $order_id, '_customer_user', true );
+        
+        if( $user_id == 0 ) { 
+
+            $user_email = get_post_meta( $order_id, '_billing_email', true );
+            $user_firstname = get_post_meta( $order_id, '_billing_first_name', true );
+            $userData = array( 'email' => $user_email, 'firstname' => $user_firstname );
+
+
+        
+        } else {
+
+            $user = get_user_by( 'id', $user_id );
+
+            if ( $user->first_name && 'false' !== $user->first_name ) {
+                $userData = array( 'email' => $user->user_email, 'firstname' => $user->first_name );
+            } else {
+                $userData = array( 'email' => $user->user_email );
+            } 
+        
         }
-    }   
+
+        $data = array(
+          'user'      => $userData,
+          'user_list' => array( 'list_ids' => $list_ids )
+        );
+
+        // Add subscriber to MailPoet.
+        $userHelper = WYSIJA::get( 'user', 'helper' );
+        $userHelper->addSubscriber( $data );
+    }
 
 } // WC_Product_Mailpoet
 
