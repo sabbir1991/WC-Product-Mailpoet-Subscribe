@@ -10,7 +10,7 @@ License: GPL2
 */
 
 /**
- * Copyright (c) YEAR Sabbir Ahmed (email: sabbir.081070@gmail.com). All rights reserved.
+ * Copyright (c) 2014 Sabbir Ahmed (email: sabbir.081070@gmail.com). All rights reserved.
  *
  * Released under the GPL license
  * http://www.opensource.org/licenses/gpl-license.php
@@ -38,16 +38,14 @@ License: GPL2
 // don't call the file directly
 if ( !defined( 'ABSPATH' ) ) exit;
 
-
-
 /**
  * WC_Product_Mailpoet class
  *
  * @class WC_Product_Mailpoet The class that holds the entire WC_Product_Mailpoet plugin
  */
 class WC_Product_Mailpoet {
+
     /**
-     * 
      * Constructor for the WC_Product_Mailpoet class
      *
      * Sets up all the appropriate hooks and actions
@@ -60,24 +58,24 @@ class WC_Product_Mailpoet {
      */
     public function __construct() {
 
-        if( !class_exists( 'WYSIJA' ) ) {
-            return;     
+        if ( !class_exists( 'WYSIJA' ) ) {
+            return;
         }
-
-        register_activation_hook( __FILE__, array( $this, 'activate' ) );
-        register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
 
         // Localize our plugin
         add_action( 'init', array( $this, 'localization_setup' ) );
+
         //add_action( 'admin_init', array( $this, 'load_metabox_in_product_post_type' ) );
-        add_action( 'add_meta_boxes', array( $this, 'load_metabox_in_product_post_type' ) ); 
+        add_action( 'add_meta_boxes', array( $this, 'load_metabox_in_product_post_type' ) );
+
         // Loads frontend scripts and styles
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+
         // Trigger when post is saved
         add_action( 'save_post', array( $this, 'product_subscribe_list_save' ) );
+
         // Trigger hwen woocommerce product status update
         add_action( 'woocommerce_order_status_changed', array( $this, 'save_user_in_subscriber_list' ), 10, 3 );
-
     }
 
     /**
@@ -94,24 +92,6 @@ class WC_Product_Mailpoet {
         }
 
         return $instance;
-    }
-
-    /**
-     * Placeholder for activation function
-     *
-     * Nothing being called here yet.
-     */
-    public function activate() {
-
-    }
-
-    /**
-     * Placeholder for deactivation function
-     *
-     * Nothing being called here yet.
-     */
-    public function deactivate() {
-
     }
 
     /**
@@ -143,16 +123,6 @@ class WC_Product_Mailpoet {
          * All scripts goes here
          */
         wp_enqueue_script( 'wc_product_mailpoet-scripts', plugins_url( 'js/script.js', __FILE__ ), array( 'jquery' ), false, true );
-
-
-        /**
-         * Example for setting up text strings from Javascript files for localization
-         *
-         * Uncomment line below and replace with proper localization variables.
-         */
-        // $translation_array = array( 'some_string' => __( 'Some string to translate', 'wc_product_mailpoet' ), 'a_value' => '10' );
-        // wp_localize_script( 'base-plugin-scripts', 'wc_product_mailpoet', $translation_array ) );
-
     }
 
     /**
@@ -163,10 +133,11 @@ class WC_Product_Mailpoet {
     }
 
     /**
-     * Dsiplay Subscriber list 
+     * Dsiplay Subscriber list
      *
-     * Callback function of add_meta_box in function load_metabox_in_product_post_type()        
-     * @param  ofject $post
+     * Callback function of add_meta_box in function load_metabox_in_product_post_type()
+     *
+     * @param ofject  $post
      */
     public function product_subscribe_call( $post ) {
 
@@ -174,18 +145,18 @@ class WC_Product_Mailpoet {
         $wysijaLists = $modelList->get( array( 'name', 'list_id' ), array( 'is_enabled' => 1 ) );
 
         $selected = get_post_meta( $post->ID, '_product_subscriber_list', true );
-
+        $selected = is_array( $selected ) ? $selected : array();
         ?>
         <div id="product_mailpoet_list">
             <?php if ( $wysijaLists ): ?>
                 <?php wp_nonce_field( 'product_mailpoet_list_nonce', 'product_mailpoet_noncename' ); ?>
                 <?php foreach ( $wysijaLists as $list ) : ?>
-                        <?php printf('<label class="%s"><input type="checkbox" name="%s[]" value="%d" %s> %s </label>','mailpoet_list', 'product_subscriber_list', $list['list_id'], (in_array( $list['list_id'], $selected)) ? 'checked="checked"' : '' , $list['name'] ); ?>
+                        <?php printf( '<label class="%s"><input type="checkbox" name="%s[]" value="%d" %s> %s </label>', 'mailpoet_list', 'product_subscriber_list', $list['list_id'], ( in_array( $list['list_id'], $selected ) ) ? 'checked="checked"' : '' , $list['name'] ); ?>
                 <?php endforeach; ?>
-               
+
             <?php else: ?>
             <div class="description">
-                <?php _e( 'No list are created', 'wc_product_mailpoet' ) ?>
+                <?php _e( 'No list found', 'wc_product_mailpoet' ) ?>
             </div>
             <?php endif; ?>
          </div>
@@ -194,28 +165,31 @@ class WC_Product_Mailpoet {
 
     /**
      * Porduct Subscriber list save in post meta correspond to product
-     * @param  integer $post_id 
-     * @return null          
+     *
+     * @param integer $post_id
+     * @return null
      */
     public function product_subscribe_list_save( $post_id ) {
 
-        // verify if this is an auto save routine. 
+        // verify if this is an auto save routine.
         // If it is our form has not been submitted, so we dont want to do anything
-        if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) 
-                return;
+        if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+            return;
+        }
+
         // verify this came from the our screen and with proper authorization,
         // because save_post can be triggered at other times
         // if our nonce isn't there, or we can't verify it, bail
-        if( !isset( $_POST['product_mailpoet_noncename'] ) || !wp_verify_nonce( $_POST['product_mailpoet_noncename'], 'product_mailpoet_list_nonce' ) ) {
-                return;
+        if ( !isset( $_POST['product_mailpoet_noncename'] ) || !wp_verify_nonce( $_POST['product_mailpoet_noncename'], 'product_mailpoet_list_nonce' ) ) {
+            return;
         }
+
         // Check permissions
         if ( ( isset ( $_POST['post_type'] ) ) && ( 'page' == $_POST['post_type'] )  ) {
             if ( ! current_user_can( 'edit_page', $post_id ) ) {
                 return;
-            }       
-        }
-        else {
+            }
+        } else {
             if ( ! current_user_can( 'edit_post', $post_id ) ) {
                 return;
             }
@@ -224,77 +198,74 @@ class WC_Product_Mailpoet {
         // OK, we're authenticated: we need to find and save the data
         if ( isset ( $_POST['product_subscriber_list'] ) ) {
             update_post_meta( $post_id, '_product_subscriber_list', $_POST['product_subscriber_list'] );
-        }          
+        }
     }
-    
+
     /**
      * Save User in subscriber list
      *
      * Save user subscriber list when woocommerce order
      * is placed. It only add user in subscriber list when
      * order is completed.
-     * 
-     * @param  [type] $order_id   [description]
-     * @param  [type] $old_status [description]
-     * @param  [type] $new_status [description]
+     *
+     * @param [type]  $order_id   [description]
+     * @param [type]  $old_status [description]
+     * @param [type]  $new_status [description]
      * @return [type]             [description]
      */
-    public function save_user_in_subscriber_list ( $order_id, $old_status, $new_status ) {
-        
+    public function save_user_in_subscriber_list( $order_id, $old_status, $new_status ) {
+
         $final_array = array();
         $list_ids = array();
 
-        if( $new_status == 'completed' ) {
+        if ( $new_status == 'completed' ) {
             $order = new WC_Order( $order_id );
             $items = $order->get_items();
 
-            foreach ($items as $item) {
-                
+            foreach ( $items as $item ) {
+
                 $id = get_post_meta( $item['product_id'], '_product_subscriber_list', true );
-                
-                if( $id == '' && empty( $id ) ) {
+
+                if ( $id == '' && empty( $id ) ) {
                     continue;
                 }
-                
-                $list_id[] = $id;          
+
+                $list_id[] = $id;
             }
 
-            foreach ( $list_id as $val )
-            {
-                foreach($val as $val2)
-                {
+            foreach ( $list_id as $val ) {
+                foreach ( $val as $val2 ) {
                     $ids[] = $val2;
                 }
             }
 
             $list_ids = array_unique( $ids );
-            
-            if( !count( $list_ids ) ) {
-                return;       
+
+            if ( !count( $list_ids ) ) {
+                return;
             }
-            
+
             $this->save_list_ids_in_subscriber_list ( $order_id, $list_ids );
-        }  
+        }
     }
 
     /**
      * Load Mailpoet core file and save user subscriber list
-     * @param  integer $order_id 
-     * @param  array $list_ids 
+     *
+     * @param integer $order_id
+     * @param array   $list_ids
      * @return null
      */
-    public function save_list_ids_in_subscriber_list ( $order_id, $list_ids ) {
-        
+    public function save_list_ids_in_subscriber_list( $order_id, $list_ids ) {
+
         $user_id = get_post_meta( $order_id, '_customer_user', true );
-        
-        if( $user_id == 0 ) { 
+
+        if ( $user_id == 0 ) {
 
             $user_email = get_post_meta( $order_id, '_billing_email', true );
             $user_firstname = get_post_meta( $order_id, '_billing_first_name', true );
             $userData = array( 'email' => $user_email, 'firstname' => $user_firstname );
 
-
-        
         } else {
 
             $user = get_user_by( 'id', $user_id );
@@ -303,13 +274,13 @@ class WC_Product_Mailpoet {
                 $userData = array( 'email' => $user->user_email, 'firstname' => $user->first_name );
             } else {
                 $userData = array( 'email' => $user->user_email );
-            } 
-        
+            }
+
         }
 
         $data = array(
-          'user'      => $userData,
-          'user_list' => array( 'list_ids' => $list_ids )
+            'user'      => $userData,
+            'user_list' => array( 'list_ids' => $list_ids )
         );
 
         // Add subscriber to MailPoet.
@@ -321,6 +292,6 @@ class WC_Product_Mailpoet {
 
 add_action( 'plugins_loaded', 'initialte_wc_product_mailpoet' );
 
-function initialte_wc_product_mailpoet () {
-    $wc_product_mailpoet = WC_Product_Mailpoet::init();   
+function initialte_wc_product_mailpoet() {
+    $wc_product_mailpoet = WC_Product_Mailpoet::init();
 }
