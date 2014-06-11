@@ -129,7 +129,7 @@ class WC_Product_Mailpoet {
      *  Load Metabox in product post type
      */
     public function load_metabox_in_product_post_type() {
-        add_meta_box( 'product_mailpoet', __( 'Mailpoet Subscriber List ', 'wc_product_mailpoet' ), array( $this, 'product_subscribe_call' ), 'product', 'side', 'high' );
+        add_meta_box( 'product_mailpoet', __( 'MailPoet Subscriber List ', 'wc_product_mailpoet' ), array( $this, 'product_subscribe_call' ), 'product', 'side', 'high' );
     }
 
     /**
