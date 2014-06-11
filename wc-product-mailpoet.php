@@ -118,11 +118,6 @@ class WC_Product_Mailpoet {
          * All styles goes here
          */
         wp_enqueue_style( 'wc_product_mailpoet-styles', plugins_url( 'css/style.css', __FILE__ ), false, date( 'Ymd' ) );
-
-        /**
-         * All scripts goes here
-         */
-        wp_enqueue_script( 'wc_product_mailpoet-scripts', plugins_url( 'js/script.js', __FILE__ ), array( 'jquery' ), false, true );
     }
 
     /**
